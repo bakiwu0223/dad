@@ -1,577 +1,551 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>工地記帳助手</title>
-    <!-- 引入 React 和 ReactDOM -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <!-- 引入 Babel 用來翻譯 JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- 引入 Tailwind CSS 用於樣式 -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* 避免 iOS 點擊閃爍 */
-        * { -webkit-tap-highlight-color: transparent; }
-        /* 隱藏滾動條但保留功能 */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    </style>
-</head>
-<body class="bg-[#F0F4F6]">
-    <div id="root"></div>
+import React, { useState, useEffect, useMemo } from 'react';
+import { Trash2, Calendar, User, Briefcase, AlertTriangle, X, Settings, Wallet, Cloud, Copy, Upload, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 
-    <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+// --- 設定與常數 ---
+const DAILY_WAGE = 3000; // 一工 3000 元
 
-        // --- 設定與常數 ---
-        const DAILY_WAGE = 3000; // 一工 3000 元
+// 主題配色設定
+const THEMES = {
+  boss: {
+    name: '錢老爺',
+    primary: 'bg-[#6D8B98]',
+    primaryHover: 'hover:bg-[#5A7480]',
+    secondary: 'bg-[#A6BCC5]',
+    bgLight: 'bg-[#F0F4F6]',
+    text: 'text-[#37474F]',
+    textLight: 'text-[#546E7A]',
+    border: 'border-[#CFD8DC]',
+    accent: 'text-[#6D8B98]',
+    statBg1: 'bg-[#7A9D96]',
+    statBg2: 'bg-[#C68686]',
+  },
+  bear: {
+    name: '小熊',
+    primary: 'bg-[#7D9D9C]',
+    primaryHover: 'hover:bg-[#688887]',
+    secondary: 'bg-[#A6C0BE]',
+    bgLight: 'bg-[#F2F6F5]',
+    text: 'text-[#2F4F4F]',
+    textLight: 'text-[#5F7A7A]',
+    border: 'border-[#CADEDD]',
+    accent: 'text-[#7D9D9C]',
+    statBg1: 'bg-[#8FBC8F]',
+    statBg2: 'bg-[#BC8F8F]',
+  },
+  yann: {
+    name: '亞恩',
+    primary: 'bg-[#B58B8B]',
+    primaryHover: 'hover:bg-[#A07676]',
+    secondary: 'bg-[#D6BDBD]',
+    bgLight: 'bg-[#FAF5F5]',
+    text: 'text-[#5D4037]',
+    textLight: 'text-[#8D6E63]',
+    border: 'border-[#E6D0D0]',
+    accent: 'text-[#B58B8B]',
+    statBg1: 'bg-[#CD853F]',
+    statBg2: 'bg-[#D4A5A5]',
+  },
+};
 
-        // --- 內建圖示 (SVG Components) ---
-        const Icon = ({ path, className = "w-6 h-6" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                {path}
-            </svg>
-        );
+// --- Helper Functions ---
+const getCurrentMonth = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+};
 
-        const Briefcase = (props) => <Icon {...props} path={<><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></>} />;
-        const User = (props) => <Icon {...props} path={<><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>} />;
-        const Cloud = (props) => <Icon {...props} path={<path d="M17.5 19c0-1.7-1.3-3-3-3h-1.1c-.9-1.2-2.4-2-4.1-2a5 5 0 0 0-1.2 9.7h8.4c1.7 0 3-1.3 3-3z"/>} />;
-        const Wallet = (props) => <Icon {...props} path={<><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></>} />;
-        const CalendarIcon = (props) => <Icon {...props} path={<><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></>} />;
-        const ChevronLeft = (props) => <Icon {...props} path={<path d="m15 18-6-6 6-6"/>} />;
-        const ChevronRight = (props) => <Icon {...props} path={<path d="m9 18 6-6-6-6"/>} />;
-        const Settings = (props) => <Icon {...props} path={<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>} />;
-        const XIcon = (props) => <Icon {...props} path={<path d="M18 6 6 18M6 6l12 12"/>} />;
-        const Trash2 = (props) => <Icon {...props} path={<><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>} />;
-        const AlertTriangle = (props) => <Icon {...props} path={<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>} />;
-        const Check = (props) => <Icon {...props} path={<polyline points="20 6 9 17 4 12"/>} />;
-        const Copy = (props) => <Icon {...props} path={<><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></>} />;
-        const Upload = (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></>} />;
+// --- UI Components ---
 
+const MonthPicker = ({ value, onChange, themeObj }) => {
+  const handleMonthChange = (offset) => {
+    const [y, m] = value.split('-');
+    const date = new Date(parseInt(y), parseInt(m) - 1 + offset, 1);
+    const newY = date.getFullYear();
+    const newM = String(date.getMonth() + 1).padStart(2, '0');
+    onChange(`${newY}-${newM}`);
+  };
 
-        // --- 主題配色 ---
-        const THEMES = {
-            boss: {
-                name: '錢老爺',
-                primary: 'bg-[#6D8B98]',
-                primaryHover: 'hover:bg-[#5A7480]',
-                secondary: 'bg-[#A6BCC5]',
-                bgLight: 'bg-[#F0F4F6]',
-                text: 'text-[#37474F]',
-                textLight: 'text-[#546E7A]',
-                border: 'border-[#CFD8DC]',
-                accent: 'text-[#6D8B98]',
-                statBg1: 'bg-[#7A9D96]',
-                statBg2: 'bg-[#C68686]',
-            },
-            bear: {
-                name: '小熊',
-                primary: 'bg-[#7D9D9C]',
-                primaryHover: 'hover:bg-[#688887]',
-                secondary: 'bg-[#A6C0BE]',
-                bgLight: 'bg-[#F2F6F5]',
-                text: 'text-[#2F4F4F]',
-                textLight: 'text-[#5F7A7A]',
-                border: 'border-[#CADEDD]',
-                accent: 'text-[#7D9D9C]',
-                statBg1: 'bg-[#8FBC8F]',
-                statBg2: 'bg-[#BC8F8F]',
-            },
-            yann: {
-                name: '亞恩',
-                primary: 'bg-[#B58B8B]',
-                primaryHover: 'hover:bg-[#A07676]',
-                secondary: 'bg-[#D6BDBD]',
-                bgLight: 'bg-[#FAF5F5]',
-                text: 'text-[#5D4037]',
-                textLight: 'text-[#8D6E63]',
-                border: 'border-[#E6D0D0]',
-                accent: 'text-[#B58B8B]',
-                statBg1: 'bg-[#CD853F]',
-                statBg2: 'bg-[#D4A5A5]',
-            },
-        };
+  return (
+    <div className="flex items-center justify-between bg-white px-2 py-1.5 rounded-xl shadow-sm border border-gray-100 mb-4 h-[44px]">
+      <button onClick={() => handleMonthChange(-1)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 active:bg-gray-200 transition-colors">
+        <ChevronLeft className="w-5 h-5" />
+      </button>
+      
+      <div className="flex items-center gap-2 font-bold text-base text-gray-700 relative">
+        <Calendar className={`w-4 h-4 ${themeObj.textLight}`} />
+        <span className="tabular-nums tracking-wide">{value.replace('-', '年 ')}月</span>
+        <input type="month" value={value} onChange={(e) => onChange(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+      </div>
 
-        const getCurrentMonth = () => {
-            const d = new Date();
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            return `${y}-${m}`;
-        };
+      <button onClick={() => handleMonthChange(1)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 active:bg-gray-200 transition-colors">
+        <ChevronRight className="w-5 h-5" />
+      </button>
+    </div>
+  );
+};
 
-        // --- 元件 ---
+const Input = ({ label, className = '', themeObj, containerClass = '', ...props }) => (
+  <div className={`flex flex-col ${containerClass}`}>
+    {label && <label className={`block text-xs font-bold mb-1 ml-1 ${themeObj.textLight}`}>{label}</label>}
+    <input
+      className={`w-full h-[46px] px-3 bg-gray-50 border rounded-xl text-sm font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all ${themeObj.border} ${themeObj.text} ${className}`}
+      style={{ '--tw-ring-color': themeObj.primary.replace('bg-', '') }}
+      {...props}
+    />
+  </div>
+);
 
-        const MonthPicker = ({ value, onChange, themeObj }) => {
-            const handleMonthChange = (offset) => {
-                const [y, m] = value.split('-');
-                const date = new Date(parseInt(y), parseInt(m) - 1 + offset, 1);
-                const newY = date.getFullYear();
-                const newM = String(date.getMonth() + 1).padStart(2, '0');
-                onChange(`${newY}-${newM}`);
-            };
+const Button = ({ children, onClick, variant = 'primary', themeObj, className = '', ...props }) => {
+  let bgClass = '';
+  if (variant === 'primary') bgClass = `${themeObj.primary} ${themeObj.primaryHover} text-white shadow-md shadow-gray-200`;
+  else if (variant === 'danger') bgClass = 'bg-[#C68686] hover:bg-[#B07070] text-white';
+  else bgClass = `bg-white border ${themeObj.border} ${themeObj.textLight}`;
 
-            return (
-                <div className="flex items-center justify-between bg-white px-2 py-1.5 rounded-xl shadow-sm border border-gray-100 mb-4 h-[44px]">
-                <button onClick={() => handleMonthChange(-1)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 active:bg-gray-200 transition-colors">
-                    <ChevronLeft className="w-5 h-5" />
-                </button>
-                
-                <div className="flex items-center gap-2 font-bold text-base text-gray-700 relative">
-                    <CalendarIcon className={`w-4 h-4 ${themeObj.textLight}`} />
-                    <span className="tabular-nums tracking-wide">{value.replace('-', '年 ')}月</span>
-                    <input type="month" value={value} onChange={(e) => onChange(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
-                </div>
+  return (
+    <button
+      onClick={onClick}
+      className={`h-[46px] px-4 rounded-xl font-bold tracking-wide transition-all active:scale-[0.96] flex items-center justify-center ${bgClass} ${className}`}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
 
-                <button onClick={() => handleMonthChange(1)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 active:bg-gray-200 transition-colors">
-                    <ChevronRight className="w-5 h-5" />
-                </button>
-                </div>
-            );
-        };
+const BalanceCard = ({ title, amount, subStats, themeObj }) => (
+  <div className={`rounded-2xl p-4 shadow-lg text-white mb-4 transition-all duration-300 ${themeObj.primary}`}>
+    <div className="flex justify-between items-start mb-1">
+      <span className="text-xs font-medium opacity-90 tracking-wider">{title}</span>
+      <Wallet className="w-4 h-4 opacity-80" />
+    </div>
+    <div className="text-3xl font-extrabold mb-4 tracking-tight">
+      ${amount.toLocaleString()}
+    </div>
+    <div className="flex gap-2">
+      {subStats.map((stat, idx) => (
+        <div key={idx} className="flex-1 bg-black/10 rounded-lg p-2 backdrop-blur-sm min-w-0 overflow-hidden">
+          <p className="text-[10px] opacity-80 mb-0.5 truncate">{stat.label}</p>
+          <p className="text-base font-bold truncate">{stat.value}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
-        const Input = ({ label, className = '', themeObj, containerClass = '', ...props }) => (
-            <div className={`flex flex-col ${containerClass}`}>
-                {label && <label className={`block text-xs font-bold mb-1 ml-1 ${themeObj.textLight}`}>{label}</label>}
-                <input
-                className={`w-full h-[46px] px-3 bg-gray-50 border rounded-xl text-sm font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all ${themeObj.border} ${themeObj.text} ${className}`}
-                style={{ '--tw-ring-color': themeObj.primary.replace('bg-', '') }}
-                {...props}
-                />
-            </div>
-        );
+// --- Modals ---
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-6 animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+        <div className="mx-auto w-12 h-12 bg-[#F2D7D5] rounded-full flex items-center justify-center mb-4">
+          <AlertTriangle className="text-[#C0392B] w-6 h-6" />
+        </div>
+        <h3 className="text-lg font-bold text-gray-700 mb-2">{title}</h3>
+        <p className="text-sm text-gray-500 mb-6 leading-relaxed">{message}</p>
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 h-[44px] border border-gray-300 rounded-xl font-bold text-gray-600">取消</button>
+          <button onClick={() => { onConfirm(); onClose(); }} className="flex-1 h-[44px] bg-[#C68686] text-white rounded-xl font-bold">確認刪除</button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-        const Button = ({ children, onClick, variant = 'primary', themeObj, className = '', ...props }) => {
-            let bgClass = '';
-            if (variant === 'primary') bgClass = `${themeObj.primary} ${themeObj.primaryHover} text-white shadow-md shadow-gray-200`;
-            else if (variant === 'danger') bgClass = 'bg-[#C68686] hover:bg-[#B07070] text-white';
-            else bgClass = `bg-white border ${themeObj.border} ${themeObj.textLight}`;
+const BackupModal = ({ isOpen, onClose, data, onRestore }) => {
+  const [mode, setMode] = useState('export');
+  const [importString, setImportString] = useState('');
+  const [copySuccess, setCopySuccess] = useState(false);
 
-            return (
-                <button
-                onClick={onClick}
-                className={`h-[46px] px-4 rounded-xl font-bold tracking-wide transition-all active:scale-[0.96] flex items-center justify-center ${bgClass} ${className}`}
-                {...props}
-                >
-                {children}
-                </button>
-            );
-        };
+  if (!isOpen) return null;
+  const backupString = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
 
-        const BalanceCard = ({ title, amount, subStats, themeObj }) => (
-            <div className={`rounded-2xl p-4 shadow-lg text-white mb-4 transition-all duration-300 ${themeObj.primary}`}>
-                <div className="flex justify-between items-start mb-1">
-                <span className="text-xs font-medium opacity-90 tracking-wider">{title}</span>
-                <Wallet className="w-4 h-4 opacity-80" />
-                </div>
-                <div className="text-3xl font-extrabold mb-4 tracking-tight">
-                ${amount.toLocaleString()}
-                </div>
-                <div className="flex gap-2">
-                {subStats.map((stat, idx) => (
-                    <div key={idx} className="flex-1 bg-black/10 rounded-lg p-2 backdrop-blur-sm min-w-0 overflow-hidden">
-                    <p className="text-[10px] opacity-80 mb-0.5 truncate">{stat.label}</p>
-                    <p className="text-base font-bold truncate">{stat.value}</p>
-                    </div>
+  const handleCopy = () => {
+    navigator.clipboard.writeText(backupString);
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 2000);
+  };
+
+  const handleRestore = () => {
+    try {
+      const decoded = JSON.parse(decodeURIComponent(escape(atob(importString))));
+      if (decoded.bossRecords && decoded.workers) {
+        onRestore(decoded);
+        onClose();
+        alert('資料還原成功！');
+      } else {
+        alert('資料格式錯誤');
+      }
+    } catch (e) {
+      alert('無效的備份碼');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5 flex flex-col max-h-[90vh]">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold text-[#37474F]">雲端資料同步</h3>
+          <button onClick={onClose}><X className="text-gray-400 w-6 h-6" /></button>
+        </div>
+        <div className="flex bg-gray-100 p-1 rounded-xl mb-4 shrink-0">
+          <button onClick={() => setMode('export')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${mode === 'export' ? 'bg-white shadow text-[#6D8B98]' : 'text-gray-400'}`}>產生備份碼</button>
+          <button onClick={() => setMode('import')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${mode === 'import' ? 'bg-white shadow text-[#C68686]' : 'text-gray-400'}`}>還原資料</button>
+        </div>
+        {mode === 'export' ? (
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 break-all h-32 overflow-y-auto text-xs font-mono text-gray-600 select-all">{backupString}</div>
+            <button onClick={handleCopy} className={`w-full h-[46px] rounded-xl font-bold flex items-center justify-center gap-2 text-white transition-colors ${copySuccess ? 'bg-[#7A9D96]' : 'bg-[#6D8B98]'}`}>{copySuccess ? <Check className="w-5 h-5"/> : <Copy className="w-5 h-5"/>} {copySuccess ? '已複製！' : '複製備份碼'}</button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <textarea value={importString} onChange={(e) => setImportString(e.target.value)} placeholder="貼上備份碼..." className="w-full h-32 p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#C68686]" />
+            <button onClick={handleRestore} className="w-full h-[46px] bg-[#C68686] hover:bg-[#B07070] text-white rounded-xl font-bold flex items-center justify-center gap-2"><Upload className="w-5 h-5"/> 確認還原</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// --- Main App ---
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('boss');
+  const theme = THEMES[activeTab];
+  const today = new Date().toISOString().split('T')[0];
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
+
+  // --- Data State ---
+  const [bossRecords, setBossRecords] = useState(() => JSON.parse(localStorage.getItem('bossRecords')) || []);
+  const [expenseCategories, setExpenseCategories] = useState(() => JSON.parse(localStorage.getItem('expenseCategories')) || ['工地支出', '工錢支出']);
+  const [workers, setWorkers] = useState(() => JSON.parse(localStorage.getItem('workers')) || { bear: { records: [] }, yann: { records: [] } });
+
+  // --- UI State ---
+  const [modalConfig, setModalConfig] = useState({ isOpen: false });
+  const [backupModalOpen, setBackupModalOpen] = useState(false);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [newCategory, setNewCategory] = useState('');
+  
+  // Forms
+  const [bossForm, setBossForm] = useState({ type: 'income', amount: '', category: '工地支出', note: '', date: today });
+  const [workerForm, setWorkerForm] = useState({ type: 'work', days: '', amount: '', note: '', date: today });
+
+  // Persistence
+  useEffect(() => { localStorage.setItem('bossRecords', JSON.stringify(bossRecords)); }, [bossRecords]);
+  useEffect(() => { localStorage.setItem('expenseCategories', JSON.stringify(expenseCategories)); }, [expenseCategories]);
+  useEffect(() => { localStorage.setItem('workers', JSON.stringify(workers)); }, [workers]);
+
+  // --- Filters ---
+  const getFilteredRecords = (records) => {
+    return records
+      .filter(r => r.date.startsWith(selectedMonth))
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+  };
+
+  const filteredBossRecords = useMemo(() => getFilteredRecords(bossRecords), [bossRecords, selectedMonth]);
+  const filteredBearRecords = useMemo(() => getFilteredRecords(workers.bear.records), [workers.bear.records, selectedMonth]);
+  const filteredYannRecords = useMemo(() => getFilteredRecords(workers.yann.records), [workers.yann.records, selectedMonth]);
+
+  // --- Stats ---
+  const getBossStats = () => {
+    const income = filteredBossRecords.filter(r => r.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
+    const expense = filteredBossRecords.filter(r => r.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
+    return { income, expense, balance: income - expense };
+  };
+
+  const getWorkerStats = (records) => {
+    const days = records.filter(r => r.type === 'work').reduce((acc, c) => acc + c.days, 0);
+    const earned = records.filter(r => r.type === 'work').reduce((acc, c) => acc + c.amount, 0);
+    const taken = records.filter(r => r.type === 'payment').reduce((acc, c) => acc + c.amount, 0);
+    return { days, earned, taken, balance: earned - taken };
+  };
+
+  // --- Handlers ---
+  const openConfirm = (title, message, callback) => setModalConfig({ isOpen: true, title, message, onConfirm: callback });
+  const restoreData = (data) => {
+    setBossRecords(data.bossRecords || []);
+    setExpenseCategories(data.expenseCategories || ['工地支出', '工錢支出']);
+    setWorkers(data.workers || { bear: { records: [] }, yann: { records: [] } });
+  };
+  
+  const addBossRecord = () => {
+    if (!bossForm.amount) return;
+    setBossRecords([{ id: Date.now(), ...bossForm, amount: parseFloat(bossForm.amount) }, ...bossRecords]);
+    setBossForm({ ...bossForm, amount: '', note: '' });
+  };
+
+  const handleWorkerDayChange = (val) => {
+    const days = val;
+    const amount = days ? parseFloat(days) * DAILY_WAGE : '';
+    setWorkerForm({ ...workerForm, days, amount });
+  };
+
+  const addWorkerRecord = (key) => {
+    if ((workerForm.type === 'work' && !workerForm.days) || (workerForm.type === 'payment' && !workerForm.amount)) return;
+    const newRec = {
+      id: Date.now(),
+      date: workerForm.date,
+      type: workerForm.type,
+      note: workerForm.note,
+      days: workerForm.type === 'work' ? parseFloat(workerForm.days) : 0,
+      amount: workerForm.type === 'work' ? parseFloat(workerForm.days) * DAILY_WAGE : parseFloat(workerForm.amount)
+    };
+    setWorkers(prev => ({ ...prev, [key]: { records: [newRec, ...prev[key].records] } }));
+    setWorkerForm({ ...workerForm, days: '', amount: '', note: '' });
+  };
+
+  return (
+    <div className={`min-h-screen ${theme.bgLight} font-sans pb-28 safe-area-inset-bottom transition-colors duration-300`}>
+      
+      {/* Header (更矮的版本: py-3) */}
+      <div className={`${theme.primary} text-white px-4 py-3 shadow-md sticky top-0 z-20 flex items-center justify-between safe-area-inset-top transition-colors duration-300`}>
+        <div className="w-8"></div>
+        <h1 className="text-base font-bold tracking-wider flex items-center gap-2"> {/* 字體稍微縮小 text-base */}
+          {activeTab === 'boss' ? <Briefcase className="w-4 h-4"/> : <User className="w-4 h-4"/>}
+          {theme.name}的帳本
+        </h1>
+        <button onClick={() => setBackupModalOpen(true)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
+          <Cloud className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="p-4 max-w-md mx-auto">
+        
+        {/* Month Picker */}
+        <MonthPicker value={selectedMonth} onChange={setSelectedMonth} themeObj={theme} />
+
+        {/* --- BOSS TAB --- */}
+        {activeTab === 'boss' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <BalanceCard 
+              title={`${selectedMonth.split('-')[1]}月 結算餘額`}
+              amount={getBossStats().balance}
+              themeObj={theme}
+              subStats={[
+                { label: '本月入帳', value: `$${getBossStats().income.toLocaleString()}` },
+                { label: '本月支出', value: `$${getBossStats().expense.toLocaleString()}` }
+              ]}
+            />
+
+            <div className={`bg-white rounded-2xl p-4 shadow-sm border ${theme.border} mb-6`}>
+              <div className="flex bg-gray-100 p-1 rounded-xl mb-4">
+                {['income', 'expense'].map(t => (
+                  <button key={t} onClick={() => setBossForm({...bossForm, type: t})} 
+                    className={`flex-1 h-[36px] text-sm font-bold rounded-lg transition-all ${bossForm.type === t ? 'bg-white shadow text-[#37474F]' : 'text-gray-400'}`}>
+                    {t === 'income' ? '資金入帳' : '支出紀錄'}
+                  </button>
                 ))}
-                </div>
-            </div>
-        );
+              </div>
 
-        const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
-            if (!isOpen) return null;
-            return (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-6 animate-in fade-in duration-200">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
-                    <div className="mx-auto w-12 h-12 bg-[#F2D7D5] rounded-full flex items-center justify-center mb-4">
-                    <AlertTriangle className="text-[#C0392B] w-6 h-6" />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-700 mb-2">{title}</h3>
-                    <p className="text-sm text-gray-500 mb-6 leading-relaxed">{message}</p>
-                    <div className="flex gap-3">
-                    <button onClick={onClose} className="flex-1 h-[44px] border border-gray-300 rounded-xl font-bold text-gray-600">取消</button>
-                    <button onClick={() => { onConfirm(); onClose(); }} className="flex-1 h-[44px] bg-[#C68686] text-white rounded-xl font-bold">確認刪除</button>
-                    </div>
-                </div>
-                </div>
-            );
-        };
-
-        const BackupModal = ({ isOpen, onClose, data, onRestore }) => {
-            const [mode, setMode] = useState('export');
-            const [importString, setImportString] = useState('');
-            const [copySuccess, setCopySuccess] = useState(false);
-
-            if (!isOpen) return null;
-            const backupString = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-
-            const handleCopy = () => {
-                navigator.clipboard.writeText(backupString);
-                setCopySuccess(true);
-                setTimeout(() => setCopySuccess(false), 2000);
-            };
-
-            const handleRestore = () => {
-                try {
-                const decoded = JSON.parse(decodeURIComponent(escape(atob(importString))));
-                if (decoded.bossRecords && decoded.workers) {
-                    onRestore(decoded);
-                    onClose();
-                    alert('資料還原成功！');
-                } else {
-                    alert('資料格式錯誤');
-                }
-                } catch (e) {
-                alert('無效的備份碼');
-                }
-            };
-
-            return (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5 flex flex-col max-h-[90vh]">
-                    <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-bold text-[#37474F]">雲端資料同步</h3>
-                    <button onClick={onClose}><XIcon className="text-gray-400 w-6 h-6" /></button>
-                    </div>
-                    <div className="flex bg-gray-100 p-1 rounded-xl mb-4 shrink-0">
-                    <button onClick={() => setMode('export')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${mode === 'export' ? 'bg-white shadow text-[#6D8B98]' : 'text-gray-400'}`}>產生備份碼</button>
-                    <button onClick={() => setMode('import')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${mode === 'import' ? 'bg-white shadow text-[#C68686]' : 'text-gray-400'}`}>還原資料</button>
-                    </div>
-                    {mode === 'export' ? (
-                    <div className="space-y-4">
-                        <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 break-all h-32 overflow-y-auto text-xs font-mono text-gray-600 select-all">{backupString}</div>
-                        <button onClick={handleCopy} className={`w-full h-[46px] rounded-xl font-bold flex items-center justify-center gap-2 text-white transition-colors ${copySuccess ? 'bg-[#7A9D96]' : 'bg-[#6D8B98]'}`}>{copySuccess ? <Check className="w-5 h-5"/> : <Copy className="w-5 h-5"/>} {copySuccess ? '已複製！' : '複製備份碼'}</button>
-                    </div>
-                    ) : (
-                    <div className="space-y-4">
-                        <textarea value={importString} onChange={(e) => setImportString(e.target.value)} placeholder="貼上備份碼..." className="w-full h-32 p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#C68686]" />
-                        <button onClick={handleRestore} className="w-full h-[46px] bg-[#C68686] hover:bg-[#B07070] text-white rounded-xl font-bold flex items-center justify-center gap-2"><Upload className="w-5 h-5"/> 確認還原</button>
-                    </div>
-                    )}
-                </div>
-                </div>
-            );
-        };
-
-        // --- 主程式 ---
-
-        function App() {
-            const [activeTab, setActiveTab] = useState('boss');
-            const theme = THEMES[activeTab];
-            const today = new Date().toISOString().split('T')[0];
-            const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
-
-            // --- 資料狀態 ---
-            const [bossRecords, setBossRecords] = useState(() => JSON.parse(localStorage.getItem('bossRecords')) || []);
-            const [expenseCategories, setExpenseCategories] = useState(() => JSON.parse(localStorage.getItem('expenseCategories')) || ['工地支出', '工錢支出']);
-            const [workers, setWorkers] = useState(() => JSON.parse(localStorage.getItem('workers')) || { bear: { records: [] }, yann: { records: [] } });
-
-            // --- UI 狀態 ---
-            const [modalConfig, setModalConfig] = useState({ isOpen: false });
-            const [backupModalOpen, setBackupModalOpen] = useState(false);
-            const [showCategoryManager, setShowCategoryManager] = useState(false);
-            const [newCategory, setNewCategory] = useState('');
-            
-            // 表單
-            const [bossForm, setBossForm] = useState({ type: 'income', amount: '', category: '工地支出', note: '', date: today });
-            const [workerForm, setWorkerForm] = useState({ type: 'work', days: '', amount: '', note: '', date: today });
-
-            // 持久化
-            useEffect(() => { localStorage.setItem('bossRecords', JSON.stringify(bossRecords)); }, [bossRecords]);
-            useEffect(() => { localStorage.setItem('expenseCategories', JSON.stringify(expenseCategories)); }, [expenseCategories]);
-            useEffect(() => { localStorage.setItem('workers', JSON.stringify(workers)); }, [workers]);
-
-            // --- 篩選 ---
-            const getFilteredRecords = (records) => {
-                return records
-                .filter(r => r.date.startsWith(selectedMonth))
-                .sort((a, b) => new Date(b.date) - new Date(a.date));
-            };
-
-            const filteredBossRecords = useMemo(() => getFilteredRecords(bossRecords), [bossRecords, selectedMonth]);
-            const filteredBearRecords = useMemo(() => getFilteredRecords(workers.bear.records), [workers.bear.records, selectedMonth]);
-            const filteredYannRecords = useMemo(() => getFilteredRecords(workers.yann.records), [workers.yann.records, selectedMonth]);
-
-            // --- 統計 ---
-            const getBossStats = () => {
-                const income = filteredBossRecords.filter(r => r.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
-                const expense = filteredBossRecords.filter(r => r.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
-                return { income, expense, balance: income - expense };
-            };
-
-            const getWorkerStats = (records) => {
-                const days = records.filter(r => r.type === 'work').reduce((acc, c) => acc + c.days, 0);
-                const earned = records.filter(r => r.type === 'work').reduce((acc, c) => acc + c.amount, 0);
-                const taken = records.filter(r => r.type === 'payment').reduce((acc, c) => acc + c.amount, 0);
-                return { days, earned, taken, balance: earned - taken };
-            };
-
-            // --- 操作 ---
-            const openConfirm = (title, message, callback) => setModalConfig({ isOpen: true, title, message, onConfirm: callback });
-            const restoreData = (data) => {
-                setBossRecords(data.bossRecords || []);
-                setExpenseCategories(data.expenseCategories || ['工地支出', '工錢支出']);
-                setWorkers(data.workers || { bear: { records: [] }, yann: { records: [] } });
-            };
-            
-            const addBossRecord = () => {
-                if (!bossForm.amount) return;
-                setBossRecords([{ id: Date.now(), ...bossForm, amount: parseFloat(bossForm.amount) }, ...bossRecords]);
-                setBossForm({ ...bossForm, amount: '', note: '' });
-            };
-
-            const handleWorkerDayChange = (val) => {
-                const days = val;
-                const amount = days ? parseFloat(days) * DAILY_WAGE : '';
-                setWorkerForm({ ...workerForm, days, amount });
-            };
-
-            const addWorkerRecord = (key) => {
-                if ((workerForm.type === 'work' && !workerForm.days) || (workerForm.type === 'payment' && !workerForm.amount)) return;
-                const newRec = {
-                id: Date.now(),
-                date: workerForm.date,
-                type: workerForm.type,
-                note: workerForm.note,
-                days: workerForm.type === 'work' ? parseFloat(workerForm.days) : 0,
-                amount: workerForm.type === 'work' ? parseFloat(workerForm.days) * DAILY_WAGE : parseFloat(workerForm.amount)
-                };
-                setWorkers(prev => ({ ...prev, [key]: { records: [newRec, ...prev[key].records] } }));
-                setWorkerForm({ ...workerForm, days: '', amount: '', note: '' });
-            };
-
-            return (
-                <div className={`min-h-screen ${theme.bgLight} font-sans pb-28 safe-area-inset-bottom transition-colors duration-300`}>
-                
-                {/* Header */}
-                <div className={`${theme.primary} text-white px-4 py-3 shadow-md sticky top-0 z-20 flex items-center justify-between safe-area-inset-top transition-colors duration-300`}>
-                    <div className="w-8"></div>
-                    <h1 className="text-base font-bold tracking-wider flex items-center gap-2">
-                    {activeTab === 'boss' ? <Briefcase className="w-4 h-4"/> : <User className="w-4 h-4"/>}
-                    {theme.name}的帳本
-                    </h1>
-                    <button onClick={() => setBackupModalOpen(true)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
-                    <Cloud className="w-5 h-5" />
-                    </button>
+              <div className="space-y-4">
+                {/* 完美間距設定: grid cols-2 + gap-5 (約20px) 確保不會黏在一起 */}
+                <div className="grid grid-cols-2 gap-5">
+                  <Input 
+                    type="date" 
+                    label="日期"
+                    value={bossForm.date} 
+                    onChange={(e) => setBossForm({ ...bossForm, date: e.target.value })} 
+                    themeObj={theme}
+                    className="text-sm" /* 強制小字體 */
+                  />
+                  <Input 
+                    type="number" 
+                    label="金額"
+                    inputMode="numeric"
+                    placeholder="輸入金額" 
+                    value={bossForm.amount} 
+                    onChange={(e) => setBossForm({ ...bossForm, amount: e.target.value })} 
+                    themeObj={theme}
+                    className="text-sm"
+                  />
                 </div>
 
-                <div className="p-4 max-w-md mx-auto">
-                    
-                    <MonthPicker value={selectedMonth} onChange={setSelectedMonth} themeObj={theme} />
-
-                    {/* BOSS TAB */}
-                    {activeTab === 'boss' && (
-                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                        <BalanceCard 
-                        title={`${selectedMonth.split('-')[1]}月 結算餘額`}
-                        amount={getBossStats().balance}
-                        themeObj={theme}
-                        subStats={[
-                            { label: '本月入帳', value: `$${getBossStats().income.toLocaleString()}` },
-                            { label: '本月支出', value: `$${getBossStats().expense.toLocaleString()}` }
-                        ]}
-                        />
-
-                        <div className={`bg-white rounded-2xl p-4 shadow-sm border ${theme.border} mb-6`}>
-                        <div className="flex bg-gray-100 p-1 rounded-xl mb-4">
-                            {['income', 'expense'].map(t => (
-                            <button key={t} onClick={() => setBossForm({...bossForm, type: t})} 
-                                className={`flex-1 h-[36px] text-sm font-bold rounded-lg transition-all ${bossForm.type === t ? 'bg-white shadow text-[#37474F]' : 'text-gray-400'}`}>
-                                {t === 'income' ? '資金入帳' : '支出紀錄'}
-                            </button>
-                            ))}
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-5">
-                            <Input type="date" label="日期" value={bossForm.date} onChange={(e) => setBossForm({ ...bossForm, date: e.target.value })} themeObj={theme} className="text-sm" />
-                            <Input type="number" label="金額" inputMode="numeric" placeholder="輸入金額" value={bossForm.amount} onChange={(e) => setBossForm({ ...bossForm, amount: e.target.value })} themeObj={theme} className="text-sm" />
-                            </div>
-
-                            {bossForm.type === 'expense' && (
-                            <div className="flex gap-3">
-                                <div className="relative w-full min-w-0">
-                                <label className={`block text-xs font-bold mb-1 ml-1 ${theme.textLight}`}>支出分類</label>
-                                <select 
-                                    className={`w-full h-[46px] px-4 bg-gray-50 border rounded-xl appearance-none text-sm font-medium ${theme.border} ${theme.text}`}
-                                    value={bossForm.category}
-                                    onChange={(e) => setBossForm({ ...bossForm, category: e.target.value })}
-                                >
-                                    {expenseCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                                <div className="absolute right-3 top-[34px] pointer-events-none opacity-50">▼</div>
-                                </div>
-                                <div className="flex flex-col justify-end">
-                                <button onClick={() => setShowCategoryManager(true)} className="h-[46px] w-[46px] flex items-center justify-center border border-gray-300 rounded-xl text-gray-500 hover:bg-gray-50 active:scale-95">
-                                    <Settings className="w-5 h-5"/>
-                                </button>
-                                </div>
-                            </div>
-                            )}
-
-                            <Input label="備註" placeholder="備註說明..." value={bossForm.note} onChange={(e) => setBossForm({ ...bossForm, note: e.target.value })} themeObj={theme} />
-                            <Button onClick={addBossRecord} themeObj={theme} variant={bossForm.type === 'income' ? 'primary' : 'danger'} className="w-full mt-2 text-base">
-                            {bossForm.type === 'income' ? '確認入帳' : '確認支出'}
-                            </Button>
-                        </div>
-                        </div>
-
-                        <div className="space-y-3 pb-4">
-                        {filteredBossRecords.length === 0 ? <p className="text-center text-gray-400 py-4 text-sm">本月尚無紀錄</p> : 
-                        filteredBossRecords.map((rec) => (
-                            <div key={rec.id} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
-                            <div className="flex items-center gap-3 min-w-0">
-                                <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white text-[10px] font-bold ${rec.type === 'income' ? theme.statBg1 : theme.statBg2}`}>
-                                {rec.date.slice(5).replace('-', '/')}
-                                </div>
-                                <div className="min-w-0 truncate">
-                                <p className="font-bold text-gray-700 truncate text-sm">{rec.type === 'income' ? '資金入帳' : rec.category}</p>
-                                {rec.note && <p className="text-xs text-gray-400 truncate">{rec.note}</p>}
-                                </div>
-                            </div>
-                            <div className="text-right shrink-0">
-                                <p className={`font-bold text-base ${rec.type === 'income' ? 'text-[#7A9D96]' : 'text-[#C68686]'}`}>
-                                {rec.type === 'income' ? '+' : '-'}${rec.amount.toLocaleString()}
-                                </p>
-                                <button onClick={() => openConfirm('刪除', '確認刪除？', () => setBossRecords(bossRecords.filter(r => r.id !== rec.id)))} className="text-xs text-gray-300 p-1">刪除</button>
-                            </div>
-                            </div>
-                        ))}
-                        </div>
+                {bossForm.type === 'expense' && (
+                  <div className="flex gap-3">
+                    <div className="relative w-full min-w-0">
+                       <label className={`block text-xs font-bold mb-1 ml-1 ${theme.textLight}`}>支出分類</label>
+                       <select 
+                          className={`w-full h-[46px] px-4 bg-gray-50 border rounded-xl appearance-none text-sm font-medium ${theme.border} ${theme.text}`}
+                          value={bossForm.category}
+                          onChange={(e) => setBossForm({ ...bossForm, category: e.target.value })}
+                       >
+                         {expenseCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                       </select>
+                       <div className="absolute right-3 top-[34px] pointer-events-none opacity-50">▼</div>
                     </div>
-                    )}
-
-                    {/* WORKER TABS */}
-                    {(activeTab === 'bear' || activeTab === 'yann') && (
-                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                        <BalanceCard 
-                        title={`${selectedMonth.split('-')[1]}月 應付結算`}
-                        amount={getWorkerStats(activeTab === 'bear' ? filteredBearRecords : filteredYannRecords).balance}
-                        themeObj={theme}
-                        subStats={[
-                            { label: '本月工資', value: `$${getWorkerStats(activeTab === 'bear' ? filteredBearRecords : filteredYannRecords).earned.toLocaleString()}` },
-                            { label: '本月已領', value: `$${getWorkerStats(activeTab === 'bear' ? filteredBearRecords : filteredYannRecords).taken.toLocaleString()}` },
-                            { label: '本月工數', value: `${getWorkerStats(activeTab === 'bear' ? filteredBearRecords : filteredYannRecords).days} 工` }
-                        ]}
-                        />
-
-                        <div className={`bg-white rounded-2xl p-4 shadow-sm border ${theme.border} mb-6`}>
-                        <div className="flex bg-gray-100 p-1 rounded-xl mb-4">
-                            <button onClick={() => setWorkerForm({ ...workerForm, type: 'work', days: '', amount: '' })} className={`flex-1 h-[36px] text-sm font-bold rounded-lg transition-all ${workerForm.type === 'work' ? 'bg-white shadow text-[#37474F]' : 'text-gray-400'}`}>記工 (賺錢)</button>
-                            <button onClick={() => setWorkerForm({ ...workerForm, type: 'payment', days: '', amount: '' })} className={`flex-1 h-[36px] text-sm font-bold rounded-lg transition-all ${workerForm.type === 'payment' ? 'bg-white shadow text-[#C68686]' : 'text-gray-400'}`}>領錢 (支出)</button>
-                        </div>
-
-                        <div className="space-y-4">
-                            <Input type="date" label="日期" value={workerForm.date} onChange={(e) => setWorkerForm({ ...workerForm, date: e.target.value })} themeObj={theme} />
-
-                            {workerForm.type === 'work' && (
-                            <div className="grid grid-cols-2 gap-5 items-end">
-                                <Input label="輸入工數" type="number" step="0.5" placeholder="0.0" value={workerForm.days} onChange={(e) => handleWorkerDayChange(e.target.value)} themeObj={theme} className="text-sm" />
-                                <div className="h-[46px] bg-gray-50 border border-dashed border-gray-300 rounded-xl flex items-center justify-center">
-                                <span className="text-gray-400 text-xs mr-1">=</span>
-                                <span className={`font-bold text-base ${theme.text}`}>${workerForm.amount ? workerForm.amount.toLocaleString() : '0'}</span>
-                                </div>
-                            </div>
-                            )}
-
-                            {workerForm.type === 'payment' && (
-                            <Input label="輸入金額" type="number" placeholder="0" value={workerForm.amount} onChange={(e) => setWorkerForm({ ...workerForm, amount: e.target.value })} themeObj={theme} className="text-sm" />
-                            )}
-
-                            <Input label="備註" placeholder={workerForm.type === 'work' ? "例如: 1樓灌漿" : "例如: 預支費"} value={workerForm.note} onChange={(e) => setWorkerForm({ ...workerForm, note: e.target.value })} themeObj={theme} />
-
-                            <Button onClick={() => addWorkerRecord(activeTab)} themeObj={theme} variant={workerForm.type === 'work' ? 'primary' : 'danger'} className="w-full mt-2 text-base">
-                            {workerForm.type === 'work' ? '確認記工' : '確認領款'}
-                            </Button>
-                        </div>
-                        </div>
-
-                        <div className="space-y-3 pb-4">
-                        {(activeTab === 'bear' ? filteredBearRecords : filteredYannRecords).length === 0 ? <p className="text-center text-gray-400 py-4 text-sm">本月尚無紀錄</p> :
-                        (activeTab === 'bear' ? filteredBearRecords : filteredYannRecords).map((rec) => (
-                            <div key={rec.id} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
-                            <div className="flex items-center gap-3 min-w-0">
-                                <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white text-[10px] font-bold ${rec.type === 'work' ? theme.statBg1 : theme.statBg2}`}>
-                                {rec.date.slice(5).replace('-', '/')}
-                                </div>
-                                <div className="min-w-0 truncate">
-                                <p className="font-bold text-gray-700 text-sm">{rec.type === 'work' ? `出工 ${rec.days} 天` : '領錢'}</p>
-                                <p className="text-xs text-gray-400 truncate">{rec.note || (rec.type === 'work' ? '一般出工' : '預支')}</p>
-                                </div>
-                            </div>
-                            <div className="text-right shrink-0">
-                                <p className={`font-bold text-base ${rec.type === 'work' ? theme.accent : 'text-[#C68686]'}`}>
-                                {rec.type === 'work' ? '+' : '-'}${rec.amount.toLocaleString()}
-                                </p>
-                                <button onClick={() => openConfirm('刪除', '確認刪除？', () => {
-                                    setWorkers(prev => ({ ...prev, [activeTab]: { records: prev[activeTab].records.filter(r => r.id !== rec.id) } }))
-                                })} className="text-xs text-gray-300 p-1">刪除</button>
-                            </div>
-                            </div>
-                        ))}
-                        </div>
+                    <div className="flex flex-col justify-end">
+                      <button onClick={() => setShowCategoryManager(true)} className="h-[46px] w-[46px] flex items-center justify-center border border-gray-300 rounded-xl text-gray-500 hover:bg-gray-50 active:scale-95">
+                        <Settings className="w-5 h-5"/>
+                      </button>
                     </div>
-                    )}
-                </div>
-
-                {/* Navigation */}
-                <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-gray-200 shadow-[0_-5px_10px_rgba(0,0,0,0.03)] flex justify-around p-2 pb-6 z-50">
-                    {['boss', 'bear', 'yann'].map((tab) => {
-                    const isActive = activeTab === tab;
-                    const tabTheme = THEMES[tab];
-                    return (
-                        <button key={tab} onClick={() => setActiveTab(tab)} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${isActive ? '-translate-y-1' : ''}`}>
-                        <div className={`w-10 h-7 rounded-2xl flex items-center justify-center mb-1 transition-colors ${isActive ? tabTheme.primary + ' text-white shadow-lg shadow-gray-300' : 'text-gray-400'}`}>
-                            {tab === 'boss' ? <Briefcase className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                        </div>
-                        <span className={`text-[10px] font-bold ${isActive ? tabTheme.textLight : 'text-gray-400'}`}>{tabTheme.name}</span>
-                        </button>
-                    )
-                    })}
-                </div>
-
-                {/* Category Manager */}
-                {showCategoryManager && (
-                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl">
-                        <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-bold text-gray-700">管理支出分類</h3>
-                        <button onClick={() => setShowCategoryManager(false)}><XIcon className="text-gray-400 w-6 h-6"/></button>
-                        </div>
-                        <div className="flex gap-2 mb-4">
-                        <input value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="flex-1 h-[44px] px-3 border rounded-xl text-sm" placeholder="新增分類" />
-                        <button onClick={() => { if(newCategory) { setExpenseCategories([...expenseCategories, newCategory]); setNewCategory(''); }}} className="bg-gray-700 text-white px-4 rounded-xl font-bold text-sm">新增</button>
-                        </div>
-                        <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {expenseCategories.map(cat => (
-                            <div key={cat} className="flex justify-between p-3 bg-gray-50 rounded-xl">
-                            <span className="text-sm">{cat}</span>
-                            <button onClick={() => openConfirm('刪除', `刪除 ${cat}?`, () => setExpenseCategories(expenseCategories.filter(c => c !== cat)))}><Trash2 className="w-4 h-4 text-gray-400"/></button>
-                            </div>
-                        ))}
-                        </div>
-                    </div>
-                    </div>
+                  </div>
                 )}
 
-                {/* Data Backup Modal */}
-                <BackupModal 
-                    isOpen={backupModalOpen} 
-                    onClose={() => setBackupModalOpen(false)} 
-                    data={{ bossRecords, workers, expenseCategories }}
-                    onRestore={restoreData}
-                />
+                <Input label="備註" placeholder="備註說明..." value={bossForm.note} onChange={(e) => setBossForm({ ...bossForm, note: e.target.value })} themeObj={theme} />
+                <Button onClick={addBossRecord} themeObj={theme} variant={bossForm.type === 'income' ? 'primary' : 'danger'} className="w-full mt-2 text-base">
+                  {bossForm.type === 'income' ? '確認入帳' : '確認支出'}
+                </Button>
+              </div>
+            </div>
 
-                <ConfirmModal isOpen={modalConfig.isOpen} onClose={() => setModalConfig({ ...modalConfig, isOpen: false })} onConfirm={modalConfig.onConfirm} title={modalConfig.title} message={modalConfig.message} />
-
+            <div className="space-y-3 pb-4">
+              {filteredBossRecords.length === 0 ? <p className="text-center text-gray-400 py-4 text-sm">本月尚無紀錄</p> : 
+               filteredBossRecords.map((rec) => (
+                <div key={rec.id} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white text-[10px] font-bold ${rec.type === 'income' ? theme.statBg1 : theme.statBg2}`}>
+                      {rec.date.slice(5).replace('-', '/')}
+                    </div>
+                    <div className="min-w-0 truncate">
+                      <p className="font-bold text-gray-700 truncate text-sm">{rec.type === 'income' ? '資金入帳' : rec.category}</p>
+                      {rec.note && <p className="text-xs text-gray-400 truncate">{rec.note}</p>}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className={`font-bold text-base ${rec.type === 'income' ? 'text-[#7A9D96]' : 'text-[#C68686]'}`}>
+                      {rec.type === 'income' ? '+' : '-'}${rec.amount.toLocaleString()}
+                    </p>
+                    <button onClick={() => openConfirm('刪除', '確認刪除？', () => setBossRecords(bossRecords.filter(r => r.id !== rec.id)))} className="text-xs text-gray-300 p-1">刪除</button>
+                  </div>
                 </div>
-            );
-        }
+              ))}
+            </div>
+          </div>
+        )}
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
+        {/* --- WORKER TABS --- */}
+        {(activeTab === 'bear' || activeTab === 'yann') && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+             <BalanceCard 
+              title={`${selectedMonth.split('-')[1]}月 應付結算`}
+              amount={getWorkerStats(activeTab === 'bear' ? filteredBearRecords : filteredYannRecords).balance}
+              themeObj={theme}
+              subStats={[
+                { label: '本月工資', value: `$${getWorkerStats(activeTab === 'bear' ? filteredBearRecords : filteredYannRecords).earned.toLocaleString()}` },
+                { label: '本月已領', value: `$${getWorkerStats(activeTab === 'bear' ? filteredBearRecords : filteredYannRecords).taken.toLocaleString()}` },
+                { label: '本月工數', value: `${getWorkerStats(activeTab === 'bear' ? filteredBearRecords : filteredYannRecords).days} 工` }
+              ]}
+            />
+
+            <div className={`bg-white rounded-2xl p-4 shadow-sm border ${theme.border} mb-6`}>
+              <div className="flex bg-gray-100 p-1 rounded-xl mb-4">
+                <button onClick={() => setWorkerForm({ ...workerForm, type: 'work', days: '', amount: '' })} className={`flex-1 h-[36px] text-sm font-bold rounded-lg transition-all ${workerForm.type === 'work' ? 'bg-white shadow text-[#37474F]' : 'text-gray-400'}`}>記工 (賺錢)</button>
+                <button onClick={() => setWorkerForm({ ...workerForm, type: 'payment', days: '', amount: '' })} className={`flex-1 h-[36px] text-sm font-bold rounded-lg transition-all ${workerForm.type === 'payment' ? 'bg-white shadow text-[#C68686]' : 'text-gray-400'}`}>領錢 (支出)</button>
+              </div>
+
+              <div className="space-y-4">
+                 <Input type="date" label="日期" value={workerForm.date} onChange={(e) => setWorkerForm({ ...workerForm, date: e.target.value })} themeObj={theme} />
+
+                {workerForm.type === 'work' && (
+                  <div className="grid grid-cols-2 gap-5 items-end">
+                    <Input 
+                      label="輸入工數"
+                      type="number" step="0.5" placeholder="0.0" 
+                      value={workerForm.days} 
+                      onChange={(e) => handleWorkerDayChange(e.target.value)} 
+                      themeObj={theme}
+                      className="text-sm"
+                    />
+                    <div className="h-[46px] bg-gray-50 border border-dashed border-gray-300 rounded-xl flex items-center justify-center">
+                      <span className="text-gray-400 text-xs mr-1">=</span>
+                      <span className={`font-bold text-base ${theme.text}`}>${workerForm.amount ? workerForm.amount.toLocaleString() : '0'}</span>
+                    </div>
+                  </div>
+                )}
+
+                {workerForm.type === 'payment' && (
+                   <Input label="輸入金額" type="number" placeholder="0" value={workerForm.amount} onChange={(e) => setWorkerForm({ ...workerForm, amount: e.target.value })} themeObj={theme} className="text-sm" />
+                )}
+
+                <Input label="備註" placeholder={workerForm.type === 'work' ? "例如: 1樓灌漿" : "例如: 預支費"} value={workerForm.note} onChange={(e) => setWorkerForm({ ...workerForm, note: e.target.value })} themeObj={theme} />
+
+                <Button onClick={() => addWorkerRecord(activeTab)} themeObj={theme} variant={workerForm.type === 'work' ? 'primary' : 'danger'} className="w-full mt-2 text-base">
+                  {workerForm.type === 'work' ? '確認記工' : '確認領款'}
+                </Button>
+              </div>
+            </div>
+
+             <div className="space-y-3 pb-4">
+              {(activeTab === 'bear' ? filteredBearRecords : filteredYannRecords).length === 0 ? <p className="text-center text-gray-400 py-4 text-sm">本月尚無紀錄</p> :
+               (activeTab === 'bear' ? filteredBearRecords : filteredYannRecords).map((rec) => (
+                <div key={rec.id} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
+                  <div className="flex items-center gap-3 min-w-0">
+                     <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white text-[10px] font-bold ${rec.type === 'work' ? theme.statBg1 : theme.statBg2}`}>
+                      {rec.date.slice(5).replace('-', '/')}
+                    </div>
+                    <div className="min-w-0 truncate">
+                      <p className="font-bold text-gray-700 text-sm">{rec.type === 'work' ? `出工 ${rec.days} 天` : '領錢'}</p>
+                      <p className="text-xs text-gray-400 truncate">{rec.note || (rec.type === 'work' ? '一般出工' : '預支')}</p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className={`font-bold text-base ${rec.type === 'work' ? theme.accent : 'text-[#C68686]'}`}>
+                      {rec.type === 'work' ? '+' : '-'}${rec.amount.toLocaleString()}
+                    </p>
+                     <button onClick={() => openConfirm('刪除', '確認刪除？', () => {
+                        setWorkers(prev => ({ ...prev, [activeTab]: { records: prev[activeTab].records.filter(r => r.id !== rec.id) } }))
+                     })} className="text-xs text-gray-300 p-1">刪除</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-gray-200 shadow-[0_-5px_10px_rgba(0,0,0,0.03)] flex justify-around p-2 pb-6 z-50">
+        {['boss', 'bear', 'yann'].map((tab) => {
+           const isActive = activeTab === tab;
+           const tabTheme = THEMES[tab];
+           return (
+            <button key={tab} onClick={() => setActiveTab(tab)} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${isActive ? '-translate-y-1' : ''}`}>
+              <div className={`w-10 h-7 rounded-2xl flex items-center justify-center mb-1 transition-colors ${isActive ? tabTheme.primary + ' text-white shadow-lg shadow-gray-300' : 'text-gray-400'}`}>
+                 {tab === 'boss' ? <Briefcase className="w-4 h-4" /> : <User className="w-4 h-4" />}
+              </div>
+              <span className={`text-[10px] font-bold ${isActive ? tabTheme.textLight : 'text-gray-400'}`}>{tabTheme.name}</span>
+            </button>
+           )
+        })}
+      </div>
+
+      {/* Category Manager */}
+      {showCategoryManager && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-700">管理支出分類</h3>
+              <button onClick={() => setShowCategoryManager(false)}><X className="text-gray-400 w-6 h-6"/></button>
+            </div>
+            <div className="flex gap-2 mb-4">
+              <input value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="flex-1 h-[44px] px-3 border rounded-xl text-sm" placeholder="新增分類" />
+              <button onClick={() => { if(newCategory) { setExpenseCategories([...expenseCategories, newCategory]); setNewCategory(''); }}} className="bg-gray-700 text-white px-4 rounded-xl font-bold text-sm">新增</button>
+            </div>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {expenseCategories.map(cat => (
+                 <div key={cat} className="flex justify-between p-3 bg-gray-50 rounded-xl">
+                   <span className="text-sm">{cat}</span>
+                   <button onClick={() => openConfirm('刪除', `刪除 ${cat}?`, () => setExpenseCategories(expenseCategories.filter(c => c !== cat)))}><Trash2 className="w-4 h-4 text-gray-400"/></button>
+                 </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Data Backup Modal */}
+      <BackupModal 
+        isOpen={backupModalOpen} 
+        onClose={() => setBackupModalOpen(false)} 
+        data={{ bossRecords, workers, expenseCategories }}
+        onRestore={restoreData}
+      />
+
+      <ConfirmModal isOpen={modalConfig.isOpen} onClose={() => setModalConfig({ ...modalConfig, isOpen: false })} onConfirm={modalConfig.onConfirm} title={modalConfig.title} message={modalConfig.message} />
+
+    </div>
+  );
+}
 

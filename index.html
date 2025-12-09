@@ -62,19 +62,19 @@ const MonthPicker = ({ value, onChange, themeObj }) => {
   };
 
   return (
-    <div className="flex items-center justify-between bg-white px-2 py-1.5 rounded-xl shadow-sm border border-gray-100 mb-4 h-[50px]">
-      <button onClick={() => handleMonthChange(-1)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 active:bg-gray-200 transition-colors">
-        <ChevronLeft className="w-6 h-6" />
+    <div className="flex items-center justify-between bg-white px-2 py-1.5 rounded-xl shadow-sm border border-gray-100 mb-4 h-[44px]"> {/* 稍微降低高度 */}
+      <button onClick={() => handleMonthChange(-1)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 active:bg-gray-200 transition-colors">
+        <ChevronLeft className="w-5 h-5" />
       </button>
       
-      <div className="flex items-center gap-2 font-bold text-lg text-gray-700 relative">
-        <Calendar className={`w-5 h-5 ${themeObj.textLight}`} />
+      <div className="flex items-center gap-2 font-bold text-base text-gray-700 relative">
+        <Calendar className={`w-4 h-4 ${themeObj.textLight}`} />
         <span className="tabular-nums tracking-wide">{value.replace('-', '年 ')}月</span>
         <input type="month" value={value} onChange={(e) => onChange(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
       </div>
 
-      <button onClick={() => handleMonthChange(1)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 active:bg-gray-200 transition-colors">
-        <ChevronRight className="w-6 h-6" />
+      <button onClick={() => handleMonthChange(1)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 active:bg-gray-200 transition-colors">
+        <ChevronRight className="w-5 h-5" />
       </button>
     </div>
   );
@@ -82,9 +82,10 @@ const MonthPicker = ({ value, onChange, themeObj }) => {
 
 const Input = ({ label, className = '', themeObj, containerClass = '', ...props }) => (
   <div className={`flex flex-col ${containerClass}`}>
-    {label && <label className={`block text-xs font-bold mb-1.5 ml-1 ${themeObj.textLight}`}>{label}</label>}
+    {label && <label className={`block text-xs font-bold mb-1 ml-1 ${themeObj.textLight}`}>{label}</label>}
     <input
-      className={`w-full h-[50px] px-3 bg-gray-50 border rounded-xl text-base font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all ${themeObj.border} ${themeObj.text} ${className}`}
+      // 這裡將字體改為 text-sm (14px) 以避免擁擠
+      className={`w-full h-[46px] px-3 bg-gray-50 border rounded-xl text-sm font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all ${themeObj.border} ${themeObj.text} ${className}`}
       style={{ '--tw-ring-color': themeObj.primary.replace('bg-', '') }}
       {...props}
     />
@@ -100,7 +101,7 @@ const Button = ({ children, onClick, variant = 'primary', themeObj, className = 
   return (
     <button
       onClick={onClick}
-      className={`h-[50px] px-4 rounded-xl font-bold tracking-wide transition-all active:scale-[0.96] flex items-center justify-center ${bgClass} ${className}`}
+      className={`h-[46px] px-4 rounded-xl font-bold tracking-wide transition-all active:scale-[0.96] flex items-center justify-center ${bgClass} ${className}`}
       {...props}
     >
       {children}
@@ -109,19 +110,19 @@ const Button = ({ children, onClick, variant = 'primary', themeObj, className = 
 };
 
 const BalanceCard = ({ title, amount, subStats, themeObj }) => (
-  <div className={`rounded-2xl p-5 shadow-lg text-white mb-4 transition-all duration-300 ${themeObj.primary}`}>
-    <div className="flex justify-between items-start mb-2">
-      <span className="text-sm font-medium opacity-90 tracking-wider">{title}</span>
-      <Wallet className="w-5 h-5 opacity-80" />
+  <div className={`rounded-2xl p-4 shadow-lg text-white mb-4 transition-all duration-300 ${themeObj.primary}`}>
+    <div className="flex justify-between items-start mb-1">
+      <span className="text-xs font-medium opacity-90 tracking-wider">{title}</span>
+      <Wallet className="w-4 h-4 opacity-80" />
     </div>
-    <div className="text-4xl font-extrabold mb-6 tracking-tight">
+    <div className="text-3xl font-extrabold mb-4 tracking-tight">
       ${amount.toLocaleString()}
     </div>
-    <div className="flex gap-3">
+    <div className="flex gap-2">
       {subStats.map((stat, idx) => (
-        <div key={idx} className="flex-1 bg-black/10 rounded-lg p-2.5 backdrop-blur-sm min-w-0 overflow-hidden">
-          <p className="text-xs opacity-80 mb-0.5 truncate">{stat.label}</p>
-          <p className="text-lg font-bold truncate">{stat.value}</p>
+        <div key={idx} className="flex-1 bg-black/10 rounded-lg p-2 backdrop-blur-sm min-w-0 overflow-hidden">
+          <p className="text-[10px] opacity-80 mb-0.5 truncate">{stat.label}</p>
+          <p className="text-base font-bold truncate">{stat.value}</p>
         </div>
       ))}
     </div>
@@ -134,14 +135,14 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-6 animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
-        <div className="mx-auto w-14 h-14 bg-[#F2D7D5] rounded-full flex items-center justify-center mb-4">
-          <AlertTriangle className="text-[#C0392B] w-7 h-7" />
+        <div className="mx-auto w-12 h-12 bg-[#F2D7D5] rounded-full flex items-center justify-center mb-4">
+          <AlertTriangle className="text-[#C0392B] w-6 h-6" />
         </div>
-        <h3 className="text-xl font-bold text-gray-700 mb-2">{title}</h3>
-        <p className="text-gray-500 mb-6 leading-relaxed">{message}</p>
+        <h3 className="text-lg font-bold text-gray-700 mb-2">{title}</h3>
+        <p className="text-sm text-gray-500 mb-6 leading-relaxed">{message}</p>
         <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 h-[48px] border border-gray-300 rounded-xl font-bold text-gray-600">取消</button>
-          <button onClick={() => { onConfirm(); onClose(); }} className="flex-1 h-[48px] bg-[#C68686] text-white rounded-xl font-bold">確認刪除</button>
+          <button onClick={onClose} className="flex-1 h-[44px] border border-gray-300 rounded-xl font-bold text-gray-600">取消</button>
+          <button onClick={() => { onConfirm(); onClose(); }} className="flex-1 h-[44px] bg-[#C68686] text-white rounded-xl font-bold">確認刪除</button>
         </div>
       </div>
     </div>
@@ -191,12 +192,12 @@ const BackupModal = ({ isOpen, onClose, data, onRestore }) => {
         {mode === 'export' ? (
           <div className="space-y-4">
             <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 break-all h-32 overflow-y-auto text-xs font-mono text-gray-600 select-all">{backupString}</div>
-            <button onClick={handleCopy} className={`w-full h-[50px] rounded-xl font-bold flex items-center justify-center gap-2 text-white transition-colors ${copySuccess ? 'bg-[#7A9D96]' : 'bg-[#6D8B98]'}`}>{copySuccess ? <Check className="w-5 h-5"/> : <Copy className="w-5 h-5"/>} {copySuccess ? '已複製！' : '複製備份碼'}</button>
+            <button onClick={handleCopy} className={`w-full h-[46px] rounded-xl font-bold flex items-center justify-center gap-2 text-white transition-colors ${copySuccess ? 'bg-[#7A9D96]' : 'bg-[#6D8B98]'}`}>{copySuccess ? <Check className="w-5 h-5"/> : <Copy className="w-5 h-5"/>} {copySuccess ? '已複製！' : '複製備份碼'}</button>
           </div>
         ) : (
           <div className="space-y-4">
             <textarea value={importString} onChange={(e) => setImportString(e.target.value)} placeholder="貼上備份碼..." className="w-full h-32 p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#C68686]" />
-            <button onClick={handleRestore} className="w-full h-[50px] bg-[#C68686] hover:bg-[#B07070] text-white rounded-xl font-bold flex items-center justify-center gap-2"><Upload className="w-5 h-5"/> 確認還原</button>
+            <button onClick={handleRestore} className="w-full h-[46px] bg-[#C68686] hover:bg-[#B07070] text-white rounded-xl font-bold flex items-center justify-center gap-2"><Upload className="w-5 h-5"/> 確認還原</button>
           </div>
         )}
       </div>
@@ -206,7 +207,7 @@ const BackupModal = ({ isOpen, onClose, data, onRestore }) => {
 
 // --- Main App ---
 
-export default function ConstructionAppFixedGap() {
+export default function ConstructionAppSlim() {
   const [activeTab, setActiveTab] = useState('boss');
   const theme = THEMES[activeTab];
   const today = new Date().toISOString().split('T')[0];
@@ -294,15 +295,15 @@ export default function ConstructionAppFixedGap() {
   return (
     <div className={`min-h-screen ${theme.bgLight} font-sans pb-28 safe-area-inset-bottom transition-colors duration-300`}>
       
-      {/* Header */}
-      <div className={`${theme.primary} text-white px-4 pt-8 pb-3 shadow-md sticky top-0 z-20 flex items-center justify-between safe-area-inset-top transition-colors duration-300`}>
+      {/* Header (更矮的版本: py-3) */}
+      <div className={`${theme.primary} text-white px-4 py-3 shadow-md sticky top-0 z-20 flex items-center justify-between safe-area-inset-top transition-colors duration-300`}>
         <div className="w-8"></div>
-        <h1 className="text-lg font-bold tracking-wider flex items-center gap-2">
-          {activeTab === 'boss' ? <Briefcase className="w-5 h-5"/> : <User className="w-5 h-5"/>}
+        <h1 className="text-base font-bold tracking-wider flex items-center gap-2"> {/* 字體稍微縮小 text-base */}
+          {activeTab === 'boss' ? <Briefcase className="w-4 h-4"/> : <User className="w-4 h-4"/>}
           {theme.name}的帳本
         </h1>
         <button onClick={() => setBackupModalOpen(true)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
-          <Cloud className="w-6 h-6" />
+          <Cloud className="w-5 h-5" />
         </button>
       </div>
 
@@ -324,60 +325,54 @@ export default function ConstructionAppFixedGap() {
               ]}
             />
 
-            <div className={`bg-white rounded-2xl p-5 shadow-sm border ${theme.border} mb-6`}>
-              <div className="flex bg-gray-100 p-1 rounded-xl mb-5">
+            <div className={`bg-white rounded-2xl p-4 shadow-sm border ${theme.border} mb-6`}>
+              <div className="flex bg-gray-100 p-1 rounded-xl mb-4">
                 {['income', 'expense'].map(t => (
                   <button key={t} onClick={() => setBossForm({...bossForm, type: t})} 
-                    className={`flex-1 h-[40px] text-sm font-bold rounded-lg transition-all ${bossForm.type === t ? 'bg-white shadow text-[#37474F]' : 'text-gray-400'}`}>
+                    className={`flex-1 h-[36px] text-sm font-bold rounded-lg transition-all ${bossForm.type === t ? 'bg-white shadow text-[#37474F]' : 'text-gray-400'}`}>
                     {t === 'income' ? '資金入帳' : '支出紀錄'}
                   </button>
                 ))}
               </div>
 
               <div className="space-y-4">
-                {/* 強制間距設定：
-                   使用 flex 與 justify-between，
-                   並將左右兩個 div 寬度設為 48% (小於50%)，
-                   這樣中間一定會留有 4% 的空隙。
-                */}
-                <div className="flex justify-between items-start">
-                  <div className="w-[48%]">
-                    <Input 
-                      type="date" 
-                      label="日期"
-                      value={bossForm.date} 
-                      onChange={(e) => setBossForm({ ...bossForm, date: e.target.value })} 
-                      themeObj={theme}
-                    />
-                  </div>
-                  <div className="w-[48%]">
-                    <Input 
-                      type="number" 
-                      label="金額"
-                      inputMode="numeric"
-                      placeholder="輸入金額" 
-                      value={bossForm.amount} 
-                      onChange={(e) => setBossForm({ ...bossForm, amount: e.target.value })} 
-                      themeObj={theme}
-                    />
-                  </div>
+                {/* 完美間距設定: grid cols-2 + gap-5 (約20px) 確保不會黏在一起 */}
+                <div className="grid grid-cols-2 gap-5">
+                  <Input 
+                    type="date" 
+                    label="日期"
+                    value={bossForm.date} 
+                    onChange={(e) => setBossForm({ ...bossForm, date: e.target.value })} 
+                    themeObj={theme}
+                    className="text-sm" /* 強制小字體 */
+                  />
+                  <Input 
+                    type="number" 
+                    label="金額"
+                    inputMode="numeric"
+                    placeholder="輸入金額" 
+                    value={bossForm.amount} 
+                    onChange={(e) => setBossForm({ ...bossForm, amount: e.target.value })} 
+                    themeObj={theme}
+                    className="text-sm"
+                  />
                 </div>
 
                 {bossForm.type === 'expense' && (
                   <div className="flex gap-3">
                     <div className="relative w-full min-w-0">
-                       <label className={`block text-xs font-bold mb-1.5 ml-1 ${theme.textLight}`}>支出分類</label>
+                       <label className={`block text-xs font-bold mb-1 ml-1 ${theme.textLight}`}>支出分類</label>
                        <select 
-                          className={`w-full h-[50px] px-4 bg-gray-50 border rounded-xl appearance-none text-base font-medium ${theme.border} ${theme.text}`}
+                          className={`w-full h-[46px] px-4 bg-gray-50 border rounded-xl appearance-none text-sm font-medium ${theme.border} ${theme.text}`}
                           value={bossForm.category}
                           onChange={(e) => setBossForm({ ...bossForm, category: e.target.value })}
                        >
                          {expenseCategories.map(c => <option key={c} value={c}>{c}</option>)}
                        </select>
-                       <div className="absolute right-3 top-[38px] pointer-events-none opacity-50">▼</div>
+                       <div className="absolute right-3 top-[34px] pointer-events-none opacity-50">▼</div>
                     </div>
                     <div className="flex flex-col justify-end">
-                      <button onClick={() => setShowCategoryManager(true)} className="h-[50px] w-[50px] flex items-center justify-center border border-gray-300 rounded-xl text-gray-500 hover:bg-gray-50 active:scale-95">
+                      <button onClick={() => setShowCategoryManager(true)} className="h-[46px] w-[46px] flex items-center justify-center border border-gray-300 rounded-xl text-gray-500 hover:bg-gray-50 active:scale-95">
                         <Settings className="w-5 h-5"/>
                       </button>
                     </div>
@@ -385,27 +380,27 @@ export default function ConstructionAppFixedGap() {
                 )}
 
                 <Input label="備註" placeholder="備註說明..." value={bossForm.note} onChange={(e) => setBossForm({ ...bossForm, note: e.target.value })} themeObj={theme} />
-                <Button onClick={addBossRecord} themeObj={theme} variant={bossForm.type === 'income' ? 'primary' : 'danger'} className="w-full mt-2 text-lg">
+                <Button onClick={addBossRecord} themeObj={theme} variant={bossForm.type === 'income' ? 'primary' : 'danger'} className="w-full mt-2 text-base">
                   {bossForm.type === 'income' ? '確認入帳' : '確認支出'}
                 </Button>
               </div>
             </div>
 
             <div className="space-y-3 pb-4">
-              {filteredBossRecords.length === 0 ? <p className="text-center text-gray-400 py-4">本月尚無紀錄</p> : 
+              {filteredBossRecords.length === 0 ? <p className="text-center text-gray-400 py-4 text-sm">本月尚無紀錄</p> : 
                filteredBossRecords.map((rec) => (
-                <div key={rec.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-white text-xs font-bold ${rec.type === 'income' ? theme.statBg1 : theme.statBg2}`}>
+                <div key={rec.id} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white text-[10px] font-bold ${rec.type === 'income' ? theme.statBg1 : theme.statBg2}`}>
                       {rec.date.slice(5).replace('-', '/')}
                     </div>
                     <div className="min-w-0 truncate">
-                      <p className="font-bold text-gray-700 truncate">{rec.type === 'income' ? '資金入帳' : rec.category}</p>
-                      {rec.note && <p className="text-sm text-gray-400 truncate">{rec.note}</p>}
+                      <p className="font-bold text-gray-700 truncate text-sm">{rec.type === 'income' ? '資金入帳' : rec.category}</p>
+                      {rec.note && <p className="text-xs text-gray-400 truncate">{rec.note}</p>}
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className={`font-bold text-lg ${rec.type === 'income' ? 'text-[#7A9D96]' : 'text-[#C68686]'}`}>
+                    <p className={`font-bold text-base ${rec.type === 'income' ? 'text-[#7A9D96]' : 'text-[#C68686]'}`}>
                       {rec.type === 'income' ? '+' : '-'}${rec.amount.toLocaleString()}
                     </p>
                     <button onClick={() => openConfirm('刪除', '確認刪除？', () => setBossRecords(bossRecords.filter(r => r.id !== rec.id)))} className="text-xs text-gray-300 p-1">刪除</button>
@@ -430,61 +425,59 @@ export default function ConstructionAppFixedGap() {
               ]}
             />
 
-            <div className={`bg-white rounded-2xl p-5 shadow-sm border ${theme.border} mb-6`}>
-              <div className="flex bg-gray-100 p-1 rounded-xl mb-5">
-                <button onClick={() => setWorkerForm({ ...workerForm, type: 'work', days: '', amount: '' })} className={`flex-1 h-[40px] text-sm font-bold rounded-lg transition-all ${workerForm.type === 'work' ? 'bg-white shadow text-[#37474F]' : 'text-gray-400'}`}>記工 (賺錢)</button>
-                <button onClick={() => setWorkerForm({ ...workerForm, type: 'payment', days: '', amount: '' })} className={`flex-1 h-[40px] text-sm font-bold rounded-lg transition-all ${workerForm.type === 'payment' ? 'bg-white shadow text-[#C68686]' : 'text-gray-400'}`}>領錢 (支出)</button>
+            <div className={`bg-white rounded-2xl p-4 shadow-sm border ${theme.border} mb-6`}>
+              <div className="flex bg-gray-100 p-1 rounded-xl mb-4">
+                <button onClick={() => setWorkerForm({ ...workerForm, type: 'work', days: '', amount: '' })} className={`flex-1 h-[36px] text-sm font-bold rounded-lg transition-all ${workerForm.type === 'work' ? 'bg-white shadow text-[#37474F]' : 'text-gray-400'}`}>記工 (賺錢)</button>
+                <button onClick={() => setWorkerForm({ ...workerForm, type: 'payment', days: '', amount: '' })} className={`flex-1 h-[36px] text-sm font-bold rounded-lg transition-all ${workerForm.type === 'payment' ? 'bg-white shadow text-[#C68686]' : 'text-gray-400'}`}>領錢 (支出)</button>
               </div>
 
               <div className="space-y-4">
                  <Input type="date" label="日期" value={workerForm.date} onChange={(e) => setWorkerForm({ ...workerForm, date: e.target.value })} themeObj={theme} />
 
                 {workerForm.type === 'work' && (
-                  <div className="flex justify-between items-end">
-                    <div className="w-[48%]">
-                       <Input 
-                        label="輸入工數"
-                        type="number" step="0.5" placeholder="0.0" 
-                        value={workerForm.days} 
-                        onChange={(e) => handleWorkerDayChange(e.target.value)} 
-                        themeObj={theme}
-                      />
-                    </div>
-                    {/* 等寬的顯示格 */}
-                    <div className="w-[48%] h-[50px] bg-gray-50 border border-dashed border-gray-300 rounded-xl flex items-center justify-center">
+                  <div className="grid grid-cols-2 gap-5 items-end">
+                    <Input 
+                      label="輸入工數"
+                      type="number" step="0.5" placeholder="0.0" 
+                      value={workerForm.days} 
+                      onChange={(e) => handleWorkerDayChange(e.target.value)} 
+                      themeObj={theme}
+                      className="text-sm"
+                    />
+                    <div className="h-[46px] bg-gray-50 border border-dashed border-gray-300 rounded-xl flex items-center justify-center">
                       <span className="text-gray-400 text-xs mr-1">=</span>
-                      <span className={`font-bold text-lg ${theme.text}`}>${workerForm.amount ? workerForm.amount.toLocaleString() : '0'}</span>
+                      <span className={`font-bold text-base ${theme.text}`}>${workerForm.amount ? workerForm.amount.toLocaleString() : '0'}</span>
                     </div>
                   </div>
                 )}
 
                 {workerForm.type === 'payment' && (
-                   <Input label="輸入金額" type="number" placeholder="0" value={workerForm.amount} onChange={(e) => setWorkerForm({ ...workerForm, amount: e.target.value })} themeObj={theme} />
+                   <Input label="輸入金額" type="number" placeholder="0" value={workerForm.amount} onChange={(e) => setWorkerForm({ ...workerForm, amount: e.target.value })} themeObj={theme} className="text-sm" />
                 )}
 
                 <Input label="備註" placeholder={workerForm.type === 'work' ? "例如: 1樓灌漿" : "例如: 預支費"} value={workerForm.note} onChange={(e) => setWorkerForm({ ...workerForm, note: e.target.value })} themeObj={theme} />
 
-                <Button onClick={() => addWorkerRecord(activeTab)} themeObj={theme} variant={workerForm.type === 'work' ? 'primary' : 'danger'} className="w-full mt-2 text-lg">
+                <Button onClick={() => addWorkerRecord(activeTab)} themeObj={theme} variant={workerForm.type === 'work' ? 'primary' : 'danger'} className="w-full mt-2 text-base">
                   {workerForm.type === 'work' ? '確認記工' : '確認領款'}
                 </Button>
               </div>
             </div>
 
              <div className="space-y-3 pb-4">
-              {(activeTab === 'bear' ? filteredBearRecords : filteredYannRecords).length === 0 ? <p className="text-center text-gray-400 py-4">本月尚無紀錄</p> :
+              {(activeTab === 'bear' ? filteredBearRecords : filteredYannRecords).length === 0 ? <p className="text-center text-gray-400 py-4 text-sm">本月尚無紀錄</p> :
                (activeTab === 'bear' ? filteredBearRecords : filteredYannRecords).map((rec) => (
-                <div key={rec.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
-                  <div className="flex items-center gap-4 min-w-0">
-                     <div className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-white text-xs font-bold ${rec.type === 'work' ? theme.statBg1 : theme.statBg2}`}>
+                <div key={rec.id} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
+                  <div className="flex items-center gap-3 min-w-0">
+                     <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white text-[10px] font-bold ${rec.type === 'work' ? theme.statBg1 : theme.statBg2}`}>
                       {rec.date.slice(5).replace('-', '/')}
                     </div>
                     <div className="min-w-0 truncate">
-                      <p className="font-bold text-gray-700">{rec.type === 'work' ? `出工 ${rec.days} 天` : '領錢'}</p>
-                      <p className="text-sm text-gray-400 truncate">{rec.note || (rec.type === 'work' ? '一般出工' : '預支')}</p>
+                      <p className="font-bold text-gray-700 text-sm">{rec.type === 'work' ? `出工 ${rec.days} 天` : '領錢'}</p>
+                      <p className="text-xs text-gray-400 truncate">{rec.note || (rec.type === 'work' ? '一般出工' : '預支')}</p>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className={`font-bold text-lg ${rec.type === 'work' ? theme.accent : 'text-[#C68686]'}`}>
+                    <p className={`font-bold text-base ${rec.type === 'work' ? theme.accent : 'text-[#C68686]'}`}>
                       {rec.type === 'work' ? '+' : '-'}${rec.amount.toLocaleString()}
                     </p>
                      <button onClick={() => openConfirm('刪除', '確認刪除？', () => {
@@ -499,14 +492,14 @@ export default function ConstructionAppFixedGap() {
       </div>
 
       {/* Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-gray-200 shadow-[0_-5px_10px_rgba(0,0,0,0.03)] flex justify-around p-3 pb-8 z-50">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-gray-200 shadow-[0_-5px_10px_rgba(0,0,0,0.03)] flex justify-around p-2 pb-6 z-50">
         {['boss', 'bear', 'yann'].map((tab) => {
            const isActive = activeTab === tab;
            const tabTheme = THEMES[tab];
            return (
-            <button key={tab} onClick={() => setActiveTab(tab)} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${isActive ? '-translate-y-2' : ''}`}>
-              <div className={`w-12 h-8 rounded-2xl flex items-center justify-center mb-1 transition-colors ${isActive ? tabTheme.primary + ' text-white shadow-lg shadow-gray-300' : 'text-gray-400'}`}>
-                 {tab === 'boss' ? <Briefcase className="w-5 h-5" /> : <User className="w-5 h-5" />}
+            <button key={tab} onClick={() => setActiveTab(tab)} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${isActive ? '-translate-y-1' : ''}`}>
+              <div className={`w-10 h-7 rounded-2xl flex items-center justify-center mb-1 transition-colors ${isActive ? tabTheme.primary + ' text-white shadow-lg shadow-gray-300' : 'text-gray-400'}`}>
+                 {tab === 'boss' ? <Briefcase className="w-4 h-4" /> : <User className="w-4 h-4" />}
               </div>
               <span className={`text-[10px] font-bold ${isActive ? tabTheme.textLight : 'text-gray-400'}`}>{tabTheme.name}</span>
             </button>
@@ -523,13 +516,13 @@ export default function ConstructionAppFixedGap() {
               <button onClick={() => setShowCategoryManager(false)}><X className="text-gray-400"/></button>
             </div>
             <div className="flex gap-2 mb-4">
-              <input value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="flex-1 h-[44px] px-3 border rounded-xl" placeholder="新增分類" />
-              <button onClick={() => { if(newCategory) { setExpenseCategories([...expenseCategories, newCategory]); setNewCategory(''); }}} className="bg-gray-700 text-white px-4 rounded-xl font-bold">新增</button>
+              <input value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="flex-1 h-[44px] px-3 border rounded-xl text-sm" placeholder="新增分類" />
+              <button onClick={() => { if(newCategory) { setExpenseCategories([...expenseCategories, newCategory]); setNewCategory(''); }}} className="bg-gray-700 text-white px-4 rounded-xl font-bold text-sm">新增</button>
             </div>
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {expenseCategories.map(cat => (
                  <div key={cat} className="flex justify-between p-3 bg-gray-50 rounded-xl">
-                   <span>{cat}</span>
+                   <span className="text-sm">{cat}</span>
                    <button onClick={() => openConfirm('刪除', `刪除 ${cat}?`, () => setExpenseCategories(expenseCategories.filter(c => c !== cat)))}><Trash2 className="w-4 h-4 text-gray-400"/></button>
                  </div>
               ))}
@@ -551,3 +544,4 @@ export default function ConstructionAppFixedGap() {
     </div>
   );
 }
+

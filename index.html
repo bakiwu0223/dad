@@ -258,7 +258,7 @@
                             <div>
                                 ${state.tab !== 'boss' && state.workerForm.type === 'work' ? `
                                     <label class="block text-xs font-bold mb-1 ml-1 ${theme.textLight}">工數</label>
-                                    <input type="number" inputmode="decimal" step="0.5" placeholder="0.0" value="${state.workerForm.days}" oninput="updateForm('days', this.value)" class="input-base ${theme.border} text-sm">
+                                    <input type="number" inputmode="decimal" step="any" placeholder="0.0" value="${state.workerForm.days}" oninput="updateForm('days', this.value)" class="input-base ${theme.border} text-sm">
                                 ` : `
                                     <label class="block text-xs font-bold mb-1 ml-1 ${theme.textLight}">金額</label>
                                     <input type="number" inputmode="decimal" placeholder="輸入金額" value="${state.tab === 'boss' ? state.bossForm.amount : state.workerForm.amount}" oninput="updateForm('amount', this.value)" class="input-base ${theme.border} text-sm">
@@ -269,7 +269,7 @@
                          ${state.tab !== 'boss' && state.workerForm.type === 'work' ? `
                             <div class="h-[46px] bg-gray-50 border border-dashed border-gray-300 rounded-xl flex items-center justify-center">
                                 <span class="text-gray-400 text-xs mr-1">=</span>
-                                <span class="font-bold text-base text-gray-700">$${state.workerForm.amount ? Number(state.workerForm.amount).toLocaleString() : '0'}</span>
+                                <span id="calc-display-amount" class="font-bold text-base text-gray-700">$${state.workerForm.amount ? Number(state.workerForm.amount).toLocaleString() : '0'}</span>
                             </div>
                          ` : ''}
 
@@ -360,12 +360,16 @@
             } else {
                 state.workerForm[field] = value;
                 if (field === 'days') {
-                    state.workerForm.amount = value ? (parseFloat(value) * DAILY_WAGE) : '';
+                    // 重要：不要觸發 render，僅手動更新計算 DOM，避免輸入中斷
+                    const amount = value ? (parseFloat(value) * DAILY_WAGE) : 0;
+                    state.workerForm.amount = amount ? amount : '';
+                    const displayEl = document.getElementById('calc-display-amount');
+                    if (displayEl) {
+                        displayEl.innerText = '$' + (amount ? amount.toLocaleString() : '0');
+                    }
                 }
             }
-            if (field === 'days' && state.tab !== 'boss') {
-               render();
-            }
+            // 這裡不呼叫 render()，保持輸入框焦點
         }
         
         function submitForm() {

@@ -44,6 +44,15 @@
         /* 針對 iOS 安全區域 */
         .safe-top { padding-top: env(safe-area-inset-top); }
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+        /* Toast 動畫 */
+        @keyframes slideIn {
+            from { transform: translateX(-50%) translateY(100%); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        .toast {
+            animation: slideIn 0.3s ease-out forwards;
+        }
     </style>
 </head>
 <body>
@@ -88,6 +97,9 @@
 
     <!-- Modal 容器 -->
     <div id="modal-container"></div>
+    
+    <!-- Toast 容器 -->
+    <div id="toast-container" class="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-[60]"></div>
 
     <script>
         // --- 設定 ---
@@ -122,6 +134,17 @@
             localStorage.setItem('expenseCategories', JSON.stringify(state.data.expenseCategories));
             localStorage.setItem('workers', JSON.stringify(state.data.workers));
             render(); // Re-render to update UI
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg text-sm mb-2 text-center whitespace-nowrap';
+            toast.innerText = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
         }
 
         function switchTab(tab) {
@@ -235,11 +258,9 @@
                             <div>
                                 ${state.tab !== 'boss' && state.workerForm.type === 'work' ? `
                                     <label class="block text-xs font-bold mb-1 ml-1 ${theme.textLight}">工數</label>
-                                    <!-- 已加入 inputmode="decimal" 觸發數字鍵盤 -->
                                     <input type="number" inputmode="decimal" step="0.5" placeholder="0.0" value="${state.workerForm.days}" oninput="updateForm('days', this.value)" class="input-base ${theme.border} text-sm">
                                 ` : `
                                     <label class="block text-xs font-bold mb-1 ml-1 ${theme.textLight}">金額</label>
-                                    <!-- 已加入 inputmode="decimal" 觸發數字鍵盤 -->
                                     <input type="number" inputmode="decimal" placeholder="輸入金額" value="${state.tab === 'boss' ? state.bossForm.amount : state.workerForm.amount}" oninput="updateForm('amount', this.value)" class="input-base ${theme.border} text-sm">
                                 `}
                             </div>
@@ -349,12 +370,16 @@
         
         function submitForm() {
             if (state.tab === 'boss') {
+                // Boss 邏輯
                 if (!state.bossForm.amount) return;
                 const newRec = { id: Date.now(), ...state.bossForm, amount: parseFloat(state.bossForm.amount) };
                 state.data.bossRecords.push(newRec);
                 state.bossForm.amount = ''; state.bossForm.note = '';
             } else {
+                // Worker 邏輯
                 if ((state.workerForm.type === 'work' && !state.workerForm.days) || (state.workerForm.type === 'payment' && !state.workerForm.amount)) return;
+                
+                // 1. 新增工人紀錄
                 const newRec = {
                     id: Date.now(),
                     date: state.workerForm.date,
@@ -364,6 +389,22 @@
                     amount: state.workerForm.type === 'work' ? parseFloat(state.workerForm.days) * DAILY_WAGE : parseFloat(state.workerForm.amount)
                 };
                 state.data.workers[state.tab].records.push(newRec);
+
+                // 2. 自動同步：如果是領錢，自動幫錢老爺記一筆支出
+                if (state.workerForm.type === 'payment') {
+                    const workerName = THEMES[state.tab].name;
+                    const bossRec = {
+                        id: Date.now() + 1, // 避免 ID 重複
+                        date: state.workerForm.date,
+                        type: 'expense',
+                        category: '工錢支出',
+                        amount: parseFloat(state.workerForm.amount),
+                        note: `${workerName}領錢${state.workerForm.note ? ' (' + state.workerForm.note + ')' : ''}`
+                    };
+                    state.data.bossRecords.push(bossRec);
+                    showToast(`已自動同步至錢老爺帳本：${workerName}領錢`);
+                }
+
                 state.workerForm.days = ''; state.workerForm.amount = ''; state.workerForm.note = '';
             }
             saveData();

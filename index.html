@@ -133,7 +133,7 @@
             localStorage.setItem('bossRecords', JSON.stringify(state.data.bossRecords));
             localStorage.setItem('expenseCategories', JSON.stringify(state.data.expenseCategories));
             localStorage.setItem('workers', JSON.stringify(state.data.workers));
-            render(); // Re-render to update UI
+            render(); 
         }
 
         function showToast(message) {
@@ -149,7 +149,6 @@
 
         function switchTab(tab) {
             state.tab = tab;
-            // 重置表單狀態當切換時
             const today = new Date().toISOString().slice(0, 10);
             state.bossForm = { type: 'income', amount: '', category: '工地支出', note: '', date: today };
             state.workerForm = { type: 'work', days: '', amount: '', note: '', date: today };
@@ -159,7 +158,7 @@
         function render() {
             const theme = THEMES[state.tab];
             
-            // 1. 更新 Header
+            // Header
             const header = document.getElementById('header');
             header.className = `fixed top-0 left-0 right-0 px-4 py-3 shadow-md z-20 flex justify-between items-center transition-colors duration-300 text-white safe-top ${theme.primary}`;
             document.getElementById('app-title').innerHTML = `
@@ -167,7 +166,7 @@
                 ${theme.name}的帳本
             `;
 
-            // 2. 更新底部導航樣式
+            // Footer
             ['boss', 'bear', 'yann'].forEach(t => {
                 const btn = document.getElementById(`tab-${t}`);
                 const iconContainer = btn.querySelector('.icon-container');
@@ -184,10 +183,9 @@
                 }
             });
 
-            // 3. 生成主要內容
+            // Content
             const content = document.getElementById('main-content');
             
-            // 篩選資料
             let records = [];
             let stats = {};
             
@@ -206,7 +204,7 @@
             }
 
             let html = `
-                <!-- 月份選擇器 -->
+                <!-- 月份 -->
                 <div class="flex items-center justify-between bg-white px-2 py-1.5 rounded-xl shadow-sm border border-gray-100 mb-4 h-[44px]">
                     <button onclick="changeMonth(-1)" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button>
                     <div class="flex items-center gap-2 font-bold text-base text-gray-700 relative">
@@ -217,7 +215,7 @@
                     <button onclick="changeMonth(1)" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></button>
                 </div>
 
-                <!-- 餘額卡片 -->
+                <!-- 餘額 -->
                 <div class="rounded-2xl p-4 shadow-lg text-white mb-4 ${theme.primary}">
                     <div class="flex justify-between items-start mb-1">
                         <span class="text-xs font-medium opacity-90 tracking-wider">${state.month.split('-')[1]}月 ${stats.title}</span>
@@ -237,7 +235,7 @@
                     </div>
                 </div>
 
-                <!-- 輸入表單區塊 -->
+                <!-- 輸入表單 -->
                 <div class="bg-white rounded-2xl p-4 shadow-sm border ${theme.border} mb-6">
                     <div class="flex bg-gray-100 p-1 rounded-xl mb-4">
                         ${state.tab === 'boss' ? `
@@ -331,7 +329,7 @@
             content.innerHTML = html;
         }
 
-        // --- 邏輯函數 ---
+        // --- Logic ---
         function changeMonth(offset) {
             const [y, m] = state.month.split('-');
             const date = new Date(parseInt(y), parseInt(m) - 1 + offset, 1);
@@ -360,30 +358,23 @@
             } else {
                 state.workerForm[field] = value;
                 if (field === 'days') {
-                    // 重要：不要觸發 render，僅手動更新計算 DOM，避免輸入中斷
                     const amount = value ? (parseFloat(value) * DAILY_WAGE) : 0;
                     state.workerForm.amount = amount ? amount : '';
                     const displayEl = document.getElementById('calc-display-amount');
-                    if (displayEl) {
-                        displayEl.innerText = '$' + (amount ? amount.toLocaleString() : '0');
-                    }
+                    if (displayEl) displayEl.innerText = '$' + (amount ? amount.toLocaleString() : '0');
                 }
             }
-            // 這裡不呼叫 render()，保持輸入框焦點
         }
         
         function submitForm() {
             if (state.tab === 'boss') {
-                // Boss 邏輯
                 if (!state.bossForm.amount) return;
                 const newRec = { id: Date.now(), ...state.bossForm, amount: parseFloat(state.bossForm.amount) };
                 state.data.bossRecords.push(newRec);
                 state.bossForm.amount = ''; state.bossForm.note = '';
             } else {
-                // Worker 邏輯
                 if ((state.workerForm.type === 'work' && !state.workerForm.days) || (state.workerForm.type === 'payment' && !state.workerForm.amount)) return;
                 
-                // 1. 新增工人紀錄
                 const newRec = {
                     id: Date.now(),
                     date: state.workerForm.date,
@@ -394,11 +385,10 @@
                 };
                 state.data.workers[state.tab].records.push(newRec);
 
-                // 2. 自動同步：如果是領錢，自動幫錢老爺記一筆支出
                 if (state.workerForm.type === 'payment') {
                     const workerName = THEMES[state.tab].name;
                     const bossRec = {
-                        id: Date.now() + 1, // 避免 ID 重複
+                        id: Date.now() + 1,
                         date: state.workerForm.date,
                         type: 'expense',
                         category: '工錢支出',
@@ -406,7 +396,7 @@
                         note: `${workerName}領錢${state.workerForm.note ? ' (' + state.workerForm.note + ')' : ''}`
                     };
                     state.data.bossRecords.push(bossRec);
-                    showToast(`已自動同步至錢老爺帳本：${workerName}領錢`);
+                    showToast(`已同步至錢老爺：${workerName}領錢`);
                 }
 
                 state.workerForm.days = ''; state.workerForm.amount = ''; state.workerForm.note = '';
@@ -424,27 +414,70 @@
             saveData();
         }
 
-        // --- Modal 邏輯 ---
+        // --- Backup Modal ---
         function openBackupModal() {
             const json = JSON.stringify(state.data);
             const encoded = btoa(unescape(encodeURIComponent(json)));
             const html = `
                 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onclick="this.remove()">
                     <div class="bg-white rounded-2xl w-full max-w-sm p-5 shadow-2xl" onclick="event.stopPropagation()">
-                        <h3 class="text-lg font-bold text-gray-700 mb-4">雲端資料同步</h3>
-                        <div class="space-y-4">
-                            <p class="text-sm text-gray-500">複製下方代碼到新手機還原：</p>
-                            <div class="bg-gray-50 p-3 rounded-xl border text-xs break-all h-24 overflow-y-auto select-all">${encoded}</div>
-                            <textarea id="restoreInput" placeholder="在此貼上代碼還原..." class="w-full h-24 p-2 border rounded-xl text-xs"></textarea>
-                            <div class="flex gap-2">
-                                <button onclick="this.closest('.fixed').remove()" class="flex-1 py-2 border rounded-xl font-bold text-gray-500">關閉</button>
-                                <button onclick="restoreData()" class="flex-1 py-2 bg-[#C68686] text-white rounded-xl font-bold">還原資料</button>
+                        <h3 class="text-lg font-bold text-gray-700 mb-4 flex justify-between items-center">
+                            雲端資料同步
+                            <button onclick="document.getElementById('modal-container').innerHTML=''" class="text-gray-400 text-2xl">&times;</button>
+                        </h3>
+                        
+                        <div class="mb-6">
+                            <p class="text-xs text-gray-500 mb-2 font-bold">1. 導出資料 (舊手機)</p>
+                            <div class="bg-gray-50 p-3 rounded-xl border text-xs break-all h-20 overflow-y-auto mb-2 text-gray-400 select-all" id="backupCodeDisplay">${encoded}</div>
+                            <button onclick="copyBackupCode()" class="w-full py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors active:scale-95">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                                一鍵複製備份碼
+                            </button>
+                        </div>
+
+                        <div class="border-t border-gray-100 my-4"></div>
+
+                        <div>
+                            <p class="text-xs text-gray-500 mb-2 font-bold">2. 導入資料 (新手機)</p>
+                            <textarea id="restoreInput" placeholder="在此貼上代碼..." class="w-full h-20 p-3 border rounded-xl text-xs mb-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#C68686]"></textarea>
+                            <div class="flex gap-3">
+                                <button onclick="pasteFromClipboard()" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-bold text-sm">從剪貼簿貼上</button>
+                                <button onclick="restoreData()" class="flex-1 py-3 bg-[#C68686] hover:bg-[#B07070] text-white rounded-xl font-bold text-sm shadow-md">確認還原</button>
                             </div>
                         </div>
                     </div>
                 </div>
             `;
             document.getElementById('modal-container').innerHTML = html;
+        }
+
+        function copyBackupCode() {
+            const code = document.getElementById('backupCodeDisplay').innerText;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(code).then(() => showToast('已複製到剪貼簿！')).catch(err => manualCopy(code));
+            } else {
+                manualCopy(code);
+            }
+        }
+
+        function manualCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("Copy");
+            textArea.remove();
+            showToast('已複製！');
+        }
+
+        async function pasteFromClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('restoreInput').value = text;
+                showToast('已貼上！');
+            } catch (err) {
+                alert('無法自動貼上，請長按輸入框貼上');
+            }
         }
 
         function restoreData() {
@@ -454,10 +487,12 @@
                 const json = decodeURIComponent(escape(atob(input)));
                 const data = JSON.parse(json);
                 if(data.bossRecords && data.workers) {
-                    state.data = data;
-                    saveData();
-                    document.getElementById('modal-container').innerHTML = '';
-                    alert('還原成功！');
+                    if(confirm('警告：這將會覆蓋目前的資料，確定還原嗎？')) {
+                        state.data = data;
+                        saveData();
+                        document.getElementById('modal-container').innerHTML = '';
+                        alert('還原成功！');
+                    }
                 } else {
                     alert('格式錯誤');
                 }
